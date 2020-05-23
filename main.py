@@ -18,7 +18,9 @@ def plot_feature(feat, positives, negatives, plot_name, plot_dir, feat_names=FEA
     prep = lambda data, f: [ex[f] for ex in data]
     pos, neg = [prep(data, feat) for data in (positives, negatives)]
 
-    pyplot.plot(pos, [1] * len(pos), 'ro', neg, [0] * len(neg), 'bo')
+    num_ex = min(len(pos), len(neg))
+    xs = range(num_ex)
+    pyplot.plot(xs, pos[:num_ex], 'ro', xs, neg[:num_ex], 'bo')
     pyplot.savefig(os.path.join(plot_dir, plot_name))
 
 def setup_out_dirs(args):
