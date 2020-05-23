@@ -3,25 +3,34 @@ import argparse
 import itertools
 import matplotlib.pyplot as pyplot
 import os
+import classifier
+import pandas as pd
+from mpl_toolkits import mplot3d
 
-VARIANCE, SKEWNESS, CURTOSIS, ENTROPY = range(4)
-FEAT_NAMES = ['variance', 'skewness', 'curtosis', 'entropy']
+def standard_plots(pos, neg, feats, plot_dir):
+    for f in feats:
+        pos_fs, neg_fs = list(pos[f]), list(neg[f])
+        p_xs, n_xs = range(len(pos_fs)), range(len(neg_fs))
+        fig, ax = pyplot.subplots()
+        ax.plot(p_xs, pos_fs, 'ro', n_xs, neg_fs, 'bo')
+        fig.savefig(os.path.join(plot_dir, "standard-{}".format(f)))
 
-def read_data(file_path):
-    with open(file_path) as f:
-        reader = csv.reader(f, delimiter=',')            
-        return [(k, list(g)) for k, g in itertools.groupby(
-            sorted([[float(n) for n in r[:-1]] + [int(r[-1])] for r in reader], 
-                   key=lambda t: t[-1]), key=lambda t: t[-1])]
+def two_feature_plots(pos, neg, feats, plot_dir):
+    for f1, f2 in itertools.combinations(feats, 2):
+        px, py = list(pos[f1]), list(pos[f2])
+        nx, ny = list(neg[f1]), list(neg[f2])
+        fig, ax = pyplot.subplots()
+        ax.plot(px, py, 'ro', nx, ny, 'bo')
+        fig.savefig(os.path.join(plot_dir, "two-feat-{}-{}".format(f1, f2)))
 
-def plot_feature(feat, positives, negatives, plot_name, plot_dir, feat_names=FEAT_NAMES):
-    prep = lambda data, f: [ex[f] for ex in data]
-    pos, neg = [prep(data, feat) for data in (positives, negatives)]
-
-    num_ex = min(len(pos), len(neg))
-    xs = range(num_ex)
-    pyplot.plot(xs, pos[:num_ex], 'ro', xs, neg[:num_ex], 'bo')
-    pyplot.savefig(os.path.join(plot_dir, plot_name))
+def three_feature_plots(pos, neg, feats, plot_dir):
+    for f1, f2, f3 in itertools.combinations(feats, 3):
+        pos_dp, neg_dp = [[list(df[f]) for f in (f1, f2, f3)] for df in (pos, neg)]
+        fig = pyplot.figure()
+        ax = pyplot.axes(projection='3d')
+        for d, c, m in ((pos_dp, 'r', 'o'), (neg_dp, 'b', 'o')):
+            ax.scatter3D(d[0], d[1], d[2], c=c, marker=m)
+        fig.savefig(os.path.join(plot_dir, "three-feat-{}-{}-{}".format(f1, f2, f3)))
 
 def setup_out_dirs(args):
     os.makedirs(args.plot_dir, exist_ok=True)
@@ -37,18 +46,17 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Classify a banknote as fradulent or authentic")
     parser.add_argument("-i", "--input-file", required=True)
     
+    parser.add_argument("-gp", "--generate-plots", required=False, action='store_true')
     parser.add_argument("-pd", "--plot-dir", required=False, default="plots")
     return parser.parse_args()
 
 if __name__ == '__main__':
     args = parse_args()
     setup_out_dirs(args)
-
-    neg_tup, pos_tup = sorted(read_data(args.input_file))
-    nl, neg_ex = neg_tup
-    pl, pos_ex = pos_tup
-
-    print_stats(pos_ex, neg_ex)
-
-    for f, pn in enumerate(FEAT_NAMES):
-        plot_feature(f, pos_ex, neg_ex, pn, args.plot_dir)
+    df = pd.read_csv(args.input_file)
+    feats = list(df)[:-1]
+    neg, pos = [df.loc[df['class'] == arg] for arg in (0, 1)]
+    if args.generate_plots:
+        standard_plots(pos, neg, feats, args.plot_dir)
+        two_feature_plots(pos, neg, feats, args.plot_dir)
+        three_feature_plots(pos, neg, feats, args.plot_dir)
