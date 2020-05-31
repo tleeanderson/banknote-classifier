@@ -3,17 +3,16 @@ import argparse
 import itertools
 import matplotlib.pyplot as pyplot
 import os
-import classifier
 import pandas as pd
 from mpl_toolkits import mplot3d
 
-def standard_plots(pos, neg, feats, plot_dir):
+def one_feature_plots(pos, neg, feats, plot_dir):
     for f in feats:
         pos_fs, neg_fs = list(pos[f]), list(neg[f])
         p_xs, n_xs = range(len(pos_fs)), range(len(neg_fs))
         fig, ax = pyplot.subplots()
         ax.plot(p_xs, pos_fs, 'ro', n_xs, neg_fs, 'bo')
-        fig.savefig(os.path.join(plot_dir, "standard-{}".format(f)))
+        fig.savefig(os.path.join(plot_dir, "one-feat-{}".format(f)))
 
 def two_feature_plots(pos, neg, feats, plot_dir):
     for f1, f2 in itertools.combinations(feats, 2):
@@ -57,6 +56,6 @@ if __name__ == '__main__':
     feats = list(df)[:-1]
     neg, pos = [df.loc[df['class'] == arg] for arg in (0, 1)]
     if args.generate_plots:
-        standard_plots(pos, neg, feats, args.plot_dir)
+        one_feature_plots(pos, neg, feats, args.plot_dir)
         two_feature_plots(pos, neg, feats, args.plot_dir)
         three_feature_plots(pos, neg, feats, args.plot_dir)
