@@ -1,10 +1,10 @@
-import csv
 import argparse
 import itertools
 import matplotlib.pyplot as pyplot
 import os
 import pandas as pd
 from mpl_toolkits import mplot3d
+from models import neural_net as nn
 
 def one_feature_plots(pos, neg, feats, plot_dir):
     for f in feats:
@@ -34,17 +34,11 @@ def three_feature_plots(pos, neg, feats, plot_dir):
 def setup_out_dirs(args):
     os.makedirs(args.plot_dir, exist_ok=True)
 
-def print_stats(pos, neg):
-    lp, ln = len(pos), len(neg)
-    total = lp + ln
-    pct = lambda t, ds: round(ds / t * 100, 2)
-    print("neg (authentic): {}, pos (fradulent): {}, total: {}"\
-          .format((ln, pct(total, ln)), (lp, pct(total, lp)), total))
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Classify a banknote as fradulent or authentic")
     parser.add_argument("-i", "--input-file", required=True)
-    
+
+    parser.add_argument("-tn", "--train-neural-net", required=False, action='store_true')
     parser.add_argument("-gp", "--generate-plots", required=False, action='store_true')
     parser.add_argument("-pd", "--plot-dir", required=False, default="plots")
     return parser.parse_args()
@@ -52,10 +46,16 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     setup_out_dirs(args)
+
     df = pd.read_csv(args.input_file)
-    feats = list(df)[:-1]
-    neg, pos = [df.loc[df['class'] == arg] for arg in (0, 1)]
+    df.drop_duplicates(keep='first', inplace=True, ignore_index=True, subset=list(df)[:-1])
     if args.generate_plots:
+        feats = list(df)[:-1]
+        neg, pos = [df.loc[df['class'] == arg] for arg in (0, 1)]
         one_feature_plots(pos, neg, feats, args.plot_dir)
         two_feature_plots(pos, neg, feats, args.plot_dir)
         three_feature_plots(pos, neg, feats, args.plot_dir)
+
+    if args.train_neural_net:
+        m, tx, ty = nn.train_net(args.input_file)
+        nn.roc_curve(tx, ty, m, args.plot_dir)
