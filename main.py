@@ -36,11 +36,17 @@ def setup_out_dirs(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Classify a banknote as fradulent or authentic")
-    parser.add_argument("-i", "--input-file", required=True)
-
-    parser.add_argument("-tn", "--train-neural-net", required=False, action='store_true')
-    parser.add_argument("-gp", "--generate-plots", required=False, action='store_true')
-    parser.add_argument("-pd", "--plot-dir", required=False, default="plots")
+    parser.add_argument("-i", "--input-file", required=False, 
+                        help="UCI banknote CSV file. Defaults to dataset/data_banknote_authentication.csv", 
+                        default='dataset/data_banknote_authentication.csv')
+    parser.add_argument("-tn", "--train-neural-net", required=False, action='store_true', 
+                        help="Train the neural network. This will output a roc curve under" 
+                        + " the plots directory.")
+    parser.add_argument("-gp", "--generate-plots", required=False, action='store_true', 
+                        help="Generate the feature plots. These will be written underneath" 
+                        + " the plots directory.")
+    parser.add_argument("-pd", "--plot-dir", required=False, default="plots", 
+                        help="Directory to write the plots. Defaults to $PROJECT_ROOT/plots.")
     return parser.parse_args()
 
 if __name__ == '__main__':
