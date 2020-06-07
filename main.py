@@ -2,9 +2,8 @@ import argparse
 import itertools
 import matplotlib.pyplot as pyplot
 import os
-import pandas as pd
 from mpl_toolkits import mplot3d
-from models import neural_net as nn
+from common import funcs
 
 def one_feature_plots(pos, neg, feats, plot_dir):
     for f in feats:
@@ -39,13 +38,14 @@ def parse_args():
     parser.add_argument("-i", "--input-file", required=False, 
                         help="UCI banknote CSV file. Defaults to dataset/data_banknote_authentication.csv", 
                         default='dataset/data_banknote_authentication.csv')
-    parser.add_argument("-tn", "--train-neural-net", required=False, action='store_true', 
+    parser.add_argument("-tn", "--train-neural-net", required=False, action='store_true',
                         help="Train the neural network. This will output a roc curve under" 
                         + " the plots directory.")
+    parser.add_argument("-dt", "--train-decision-tree", required=False, action='store_true')
     parser.add_argument("-gp", "--generate-plots", required=False, action='store_true', 
                         help="Generate the feature plots. These will be written underneath" 
                         + " the plots directory.")
-    parser.add_argument("-pd", "--plot-dir", required=False, default="plots", 
+    parser.add_argument("-pd", "--plot-dir", required=False, default="./plots", 
                         help="Directory to write the plots. Defaults to $PROJECT_ROOT/plots.")
     return parser.parse_args()
 
@@ -53,15 +53,19 @@ if __name__ == '__main__':
     args = parse_args()
     setup_out_dirs(args)
 
-    df = pd.read_csv(args.input_file)
-    df.drop_duplicates(keep='first', inplace=True, ignore_index=True, subset=list(df)[:-1])
     if args.generate_plots:
+        df = funcs.read_data(args.input_file)
         feats = list(df)[:-1]
         neg, pos = [df.loc[df['class'] == arg] for arg in (0, 1)]
         one_feature_plots(pos, neg, feats, args.plot_dir)
         two_feature_plots(pos, neg, feats, args.plot_dir)
         three_feature_plots(pos, neg, feats, args.plot_dir)
+        print("Generated plots in directory {}".format(args.plot_dir))
 
     if args.train_neural_net:
-        m, tx, ty = nn.train_net(args.input_file)
-        nn.roc_curve(tx, ty, m, args.plot_dir)
+        from models import neural_net as nn
+        nn.main(args.input_file, args.plot_dir)
+
+    if args.train_decision_tree:
+        from models import decision_tree as dec_tree
+        dec_tree.main(args.input_file, args.plot_dir)
