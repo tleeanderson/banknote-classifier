@@ -14,18 +14,23 @@ def plot_features(out_dir, data):
         ax.plot(*ar)
         fig.savefig(os.path.join(out_dir, "std-{}".format(a[0])))
 
-def roc_curve(ys, ps, plot_dir, model_name):
-    fp_rate, tp_rate, th = metrics.roc_curve(np.array(ys), np.array(ps))
+def roc_curve(ys_ps, plot_dir, model_name):
+    rates = [(fpr, tpr, th, c) for (fpr, tpr, th), c \
+             in [(metrics.roc_curve(np.array(ys), np.array(ps)), c) for ys, ps, c in ys_ps]]
     sk_fig, sk_ax = pyplot.subplots()
-
-    sk_ax.plot(fp_rate, tp_rate, 'b', [0, 1], [0, 1], '--r')
+    for f, t, _, c in rates:
+        sk_ax.plot(f, t, c)
+    sk_ax.plot([0, 1], [0, 1], '--r')
     sk_ax.set_xlabel('FPR')
     sk_ax.set_ylabel('TPR')
-    auc = metrics.auc(fp_rate, tp_rate)
-    sk_ax.legend(["AUC = {:.05}".format(auc)])
+    
+    auc = [metrics.auc(fpr, tpr) for fpr, tpr, _, _ in rates]
+    avg_auc, std_auc, mi, mx = np.average(auc), np.std(auc), np.min(auc), np.max(auc)
+    sk_ax.legend(["AVG AUC = {:.03}\nSTD AUC = {:.03}\nMIN AUC = {:.03}\nMAX AUC = {:.03}"\
+                  .format(avg_auc, std_auc, mi, mx)], loc='lower right')
     out_path = os.path.join(plot_dir, "{}-roc_curve".format(model_name))
     sk_fig.savefig(out_path)
-    print("Saved roc curve to {}".format(out_path))
+    print("Saved roc curve to {}".format(out_path))    
 
 def read_data(data_file):
     data = pd.read_csv(data_file)
