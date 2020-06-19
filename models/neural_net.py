@@ -77,21 +77,15 @@ def main(data_file, plot_dir):
     standardize(data)
     xs, ys = funcs.xs_and_ys(data)
 
-    # model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4], 
-    #                                 'verbose': [0], 'kernel_regularizer': ['l1', 'l2']}),
-    #                 (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4], 
-    #                                  'verbose': [0], 'kernel_regularizer': ['l1', 'l2']})]
-
-    model_params = [(simple_model, {'epochs': [1], 'batch_size': [1], 
-                                    'verbose': [0], 'kernel_regularizer': ['l1']}),
-                    (complex_model, {'epochs': [1], 'batch_size': [1], 
-                                     'verbose': [0], 'kernel_regularizer': ['l1']})]
+    model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4], 
+                                    'verbose': [0], 'kernel_regularizer': ['l1', 'l2']}),
+                    (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4], 
+                                     'verbose': [0], 'kernel_regularizer': ['l1', 'l2']})]
 
     train_params = {'epochs', 'verbose', 'batch_size'}
     build_model_params = {'kernel_regularizer'}
     cv_data = evaluate(model_params, xs, ys, train_params, build_model_params)
-    out_data = cv_data.sort_values(by=['test_loss', 'test_accuracy'])[['train_loss', 'train_accuracy', 
-                                                                       'test_loss', 'test_accuracy', 'model_name']]
+    out_data = cv_data.sort_values(by=['test_loss', 'test_accuracy'])[['train_loss', 'train_accuracy', 'test_loss', 'test_accuracy', 'model_name']]
     
     res = cv_results(cv_data)
     print("CV accuracy results: ", res[[('test_accuracy', 'mean'), ('test_accuracy', 'std')]]\
