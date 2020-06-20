@@ -15,8 +15,8 @@ def plot_features(out_dir, data):
         fig.savefig(os.path.join(out_dir, "std-{}".format(a[0])))
 
 def roc_curve(ys_ps, plot_dir, model_name):
-    rates = [(fpr, tpr, th, 'b') for fpr, tpr, th \
-             in [metrics.roc_curve(np.array(ys), np.array(ps)) for ys, ps in ys_ps]]
+    rates = [(fpr, tpr, th, c) for (fpr, tpr, th), c \
+             in [(metrics.roc_curve(np.array(ys), np.array(ps)), c) for ys, ps, c in ys_ps]]
     sk_fig, sk_ax = pyplot.subplots()
     for f, t, _, c in rates:
         sk_ax.plot(f, t, c)
