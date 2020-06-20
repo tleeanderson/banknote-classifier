@@ -1,19 +1,13 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import zscore
-from matplotlib import pyplot
-import functools
-import operator as op
-import os
 from keras.models import Sequential
 from keras.layers import Dense
 from common import funcs
-from sklearn.model_selection import GridSearchCV
+from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
-from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import ParameterGrid
 from tqdm import tqdm
-import functools
 
 def standardize(df):
     for f in list(df)[:-1]:
@@ -35,7 +29,7 @@ def complex_model(kernel_regularizer):
 def evaluate(model_params, xs, ys, tr_params, bm_params):
     st_kf = StratifiedKFold(n_splits=5)
     row_keys = ['train_loss', 'train_accuracy', 'test_loss', 'test_accuracy', 
-                'train_params', 'model_params', 'model_name', 'ys_ps']
+                'train_params', 'model_params', 'model_name', 'ys_ps', 'auc']
     colors = ['b', 'g', 'c', 'm', 'y', 'k', 'r']
     ci = 0
     cv_results = {k: [] for k in row_keys}
@@ -60,7 +54,11 @@ def evaluate(model_params, xs, ys, tr_params, bm_params):
                 cv_results[row_keys[4]].append(tuple(tps.items()))
                 cv_results[row_keys[5]].append(tuple(bmps.items()))
                 cv_results[row_keys[6]].append(mod_func.__name__)
-                cv_results[row_keys[7]].append((tst_y, train_model.predict(tst_x), colors[ci]))
+                ys_ps = (tst_y, train_model.predict(tst_x), colors[ci])
+                cv_results[row_keys[7]].append(ys_ps)
+                fpr, tpr, _ = metrics.roc_curve(np.array(ys_ps[0]), np.array(ys_ps[1]))
+                cv_results[row_keys[8]].append(metrics.auc(fpr, tpr))
+
             ci = (ci + 1) % len(colors)
 
     return pd.DataFrame(cv_results)
@@ -75,7 +73,8 @@ def cv_results(cv_data):
                          'model_name': ['first'],
                          'model_params': ['first'],
                          'train_params': ['first'],
-                         'ys_ps': ['sum']})
+                         'ys_ps': ['sum'],
+                         'auc': agg_funcs})
     return output
 
 def roc_curves(cv_data, plot_dir):
@@ -93,27 +92,18 @@ def main(data_file, plot_dir):
     standardize(data)
     xs, ys = funcs.xs_and_ys(data)
 
-    # model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4], 
-    #                                 'verbose': [0], 'kernel_regularizer': ['l1', 'l2']}),
-    #                 (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4], 
-    #                                  'verbose': [0], 'kernel_regularizer': ['l1', 'l2']})]
-
-    model_params = [(simple_model, {'epochs': [1], 'batch_size': [1],
-                                    'verbose': [0], 'kernel_regularizer': ['l1']}),
-                    (complex_model, {'epochs': [1], 'batch_size': [1],
-                                     'verbose': [0], 'kernel_regularizer': ['l1']})]
+    model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4], 
+                                    'verbose': [0], 'kernel_regularizer': ['l1', 'l2']}),
+                    (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4], 
+                                     'verbose': [0], 'kernel_regularizer': ['l1', 'l2']})]
 
     train_params = {'epochs', 'verbose', 'batch_size'}
     build_model_params = {'kernel_regularizer'}
     cv_data = evaluate(model_params, xs, ys, train_params, build_model_params)
-    out_data = cv_data.sort_values(by=['test_loss', 'test_accuracy'])[['train_loss', 'train_accuracy', 'test_loss', 'test_accuracy', 'model_name']]
-    
     res = cv_results(cv_data)
-    print("CV accuracy results:\n", res[[('model_name', 'first'), ('test_accuracy', 'mean'), ('test_accuracy', 'std')]]\
+    print("CV accuracy results:\n", res[[('test_accuracy', 'mean'), ('test_accuracy', 'std')]]\
           .sort_values(by=[('test_accuracy', 'mean')], ascending=False))
 
-    #print(list(res))
-    # print("CV accuracy results:\n", res[[('test_accuracy', 'mean'), ('test_accuracy', 'std')]]\
-    #       .sort_values(by=[('test_accuracy', 'mean')], ascending=False))
-
+    print("\nCV auc results:\n", res[[('auc', 'mean'), ('auc', 'std')]]\
+          .sort_values(by=[('auc', 'mean')], ascending=False), "\n")
     roc_curves(res, plot_dir)
