@@ -92,9 +92,9 @@ def main(data_file, plot_dir):
     standardize(data)
     xs, ys = funcs.xs_and_ys(data)
 
-    model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4], 
+    model_params = [(simple_model, {'epochs': [5, 10], 'batch_size': [3, 4],
                                     'verbose': [0], 'kernel_regularizer': ['l1', 'l2']}),
-                    (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4], 
+                    (complex_model, {'epochs': [10, 15], 'batch_size': [3, 4],
                                      'verbose': [0], 'kernel_regularizer': ['l1', 'l2']})]
 
     train_params = {'epochs', 'verbose', 'batch_size'}
